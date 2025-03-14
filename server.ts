@@ -1,10 +1,11 @@
 // mod.ts
 // 国産第1号 - 分散型ソーシャルネットワーク（超高度版・公開性制御・埋め込みプレビュー・フレンド／グループ／画像投稿機能付き）
-//
-// 環境変数（Deno Deploy または .env）:
-//   DOMAIN             : サービス運用ドメイン（例: yourdomain.com）
-//   JWT_SECRET         : JWT シークレットキー
-//   FEDERATION_SECRET  : フェデレーション向け認証シークレット
+/*
+環境変数（Deno Deploy または .env）:
+  DOMAIN             : サービス運用ドメイン（例: yourdomain.com）
+  JWT_SECRET         : JWT シークレットキー
+  FEDERATION_SECRET  : フェデレーション向け認証シークレット
+*/
 
 import { create, verify, getNumericDate, Payload } from "https://deno.land/x/djwt@v2.7/mod.ts";
 import { hash, compare } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
@@ -38,7 +39,7 @@ interface Post {
   createdAt: string;
   author: string;
   visibility: "public" | "private";
-  imageURL?: string; // 画像投稿時にURLがあれば
+  imageURL?: string;
 }
 
 interface FriendRequest {
@@ -73,9 +74,9 @@ interface Image {
   uploader: string;
 }
 
-// セキュリティヘッダー
+// セキュリティヘッダー（inline script 許可とフォントも許可）
 const SECURITY_HEADERS: HeadersInit = {
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -85,22 +86,13 @@ const SECURITY_HEADERS: HeadersInit = {
 
 // 共通レスポンス関数
 function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
-  });
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
 }
 function textResponse(text: string, status = 200): Response {
-  return new Response(text, {
-    status,
-    headers: { "Content-Type": "text/plain", ...SECURITY_HEADERS },
-  });
+  return new Response(text, { status, headers: { "Content-Type": "text/plain", ...SECURITY_HEADERS } });
 }
 function htmlResponse(html: string, status = 200): Response {
-  return new Response(html, {
-    status,
-    headers: { "Content-Type": "text/html", ...SECURITY_HEADERS },
-  });
+  return new Response(html, { status, headers: { "Content-Type": "text/html", ...SECURITY_HEADERS } });
 }
 
 // 簡易レートリミット（IP毎チェック）
@@ -120,7 +112,7 @@ function checkRateLimit(req: Request): Response | null {
   return null;
 }
 
-// JWT 認証ヘルパー
+// JWT認証ヘルパー
 async function getUserFromAuth(req: Request): Promise<string | null> {
   const auth = req.headers.get("Authorization");
   if (!auth || !auth.startsWith("Bearer ")) return null;
@@ -135,7 +127,7 @@ async function getUserFromAuth(req: Request): Promise<string | null> {
 }
 
 // ------------------------------
-// HTML UI（OG/Twitter Card用メタタグ付き）
+// HTML UI（OG/Twitter Card用メタタグ付き、黒を基調・グラデーションアニメーション追加）
 // ------------------------------
 const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -155,32 +147,25 @@ const htmlContent = `<!DOCTYPE html>
   <style>
     :root {
       --primary-color: #1DA1F2;
-      --background-color: #ffffff;
-      --accent-color: #657786;
-      --border-color: #e1e8ed;
-      --shadow-color: rgba(0, 0, 0, 0.1);
+      --background-color: #000000;
+      --accent-color: #bbbbbb;
+      --border-color: #333333;
+      --shadow-color: rgba(0, 0, 0, 0.5);
       --font-family: 'Roboto', sans-serif;
-      --dark-background: #15202b;
-      --dark-text: #e1e8ed;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: var(--font-family);
-      background: linear-gradient(135deg, var(--background-color), #f0f4f8);
-      color: #14171a;
+      background: linear-gradient(135deg, #000000, #222222);
+      color: #ffffff;
       line-height: 1.6;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding-bottom: 40px;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    body.dark-mode {
-      background: linear-gradient(135deg, var(--dark-background), #0e1116);
-      color: var(--dark-text);
+      transition: background 0.3s, color 0.3s;
     }
     header {
-      background: linear-gradient(135deg, var(--primary-color), #0d95e8);
       width: 100%;
       padding: 20px 0;
       text-align: center;
@@ -188,26 +173,37 @@ const htmlContent = `<!DOCTYPE html>
       position: sticky;
       top: 0;
       z-index: 100;
+      background: linear-gradient(45deg, #000000, #444444, #000000);
+      background-size: 200% 200%;
+      animation: gradientAnimation 5s ease infinite;
       box-shadow: 0 2px 4px var(--shadow-color);
       display: flex;
       justify-content: center;
       align-items: center;
     }
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
     header h1 { font-size: 2.8rem; font-weight: 700; }
-    header button { margin-left: 20px; padding: 8px 12px; border: none; border-radius: 4px; background: #fff; color: var(--primary-color); cursor: pointer; transition: background 0.3s; }
-    header button:hover { background: #e8f5fd; }
+    header button { margin-left: 20px; padding: 8px 12px; border: none; border-radius: 4px; background: #ffffff; color: var(--primary-color); cursor: pointer; transition: background 0.3s; }
+    header button:hover { background: #dddddd; }
     main { max-width: 800px; width: 100%; padding: 20px; }
     section { margin-bottom: 30px; }
     h2 { margin-bottom: 15px; color: var(--primary-color); font-size: 1.8rem; }
     form {
-      background: #f5f8fa;
+      background: #111111;
       padding: 20px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       margin-bottom: 20px;
       animation: fadeIn 0.6s ease-in-out;
     }
-    body.dark-mode form { background: #192734; border-color: #38444d; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     input, textarea, select {
       width: 100%;
       padding: 12px;
@@ -215,14 +211,9 @@ const htmlContent = `<!DOCTYPE html>
       border-radius: 4px;
       margin-bottom: 10px;
       font-size: 1rem;
+      background: #222222;
+      color: #ffffff;
       transition: border-color 0.3s ease;
-      background: #fff;
-      color: #14171a;
-    }
-    body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
-      background: #15202b;
-      color: var(--dark-text);
-      border-color: #38444d;
     }
     input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary-color); }
     button {
@@ -231,7 +222,7 @@ const htmlContent = `<!DOCTYPE html>
       border: none;
       border-radius: 4px;
       background: var(--primary-color);
-      color: #fff;
+      color: #ffffff;
       font-size: 1rem;
       font-weight: 500;
       cursor: pointer;
@@ -239,7 +230,7 @@ const htmlContent = `<!DOCTYPE html>
     }
     button:hover { background: #0d95e8; transform: scale(1.02); }
     .post {
-      background: #fff;
+      background: #111111;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 15px;
@@ -247,7 +238,6 @@ const htmlContent = `<!DOCTYPE html>
       box-shadow: 0 2px 4px var(--shadow-color);
       transition: transform 0.2s ease;
     }
-    body.dark-mode .post { background: #192734; border-color: #38444d; }
     .post:hover { transform: translateY(-3px); }
     .post p { font-size: 1.1rem; margin-bottom: 10px; }
     .post small { color: var(--accent-color); }
@@ -255,17 +245,16 @@ const htmlContent = `<!DOCTYPE html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #f5f8fa;
+      background: #111111;
       padding: 10px 15px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       margin-bottom: 20px;
       animation: fadeIn 0.6s ease-in-out;
     }
-    body.dark-mode #userInfo { background: #192734; border-color: #38444d; }
     #userInfo p { margin: 0; font-size: 1.1rem; }
     .spinner {
-      border: 4px solid #f3f3f3;
+      border: 4px solid #333333;
       border-top: 4px solid var(--primary-color);
       border-radius: 50%;
       width: 40px;
@@ -274,7 +263,6 @@ const htmlContent = `<!DOCTYPE html>
       margin: 20px auto;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) {
       header h1 { font-size: 2rem; }
       main { padding: 10px; }
@@ -285,7 +273,7 @@ const htmlContent = `<!DOCTYPE html>
 <body>
   <header>
     <h1>国産第一号</h1>
-    <button id="themeToggle">ダークモード</button>
+    <button id="themeToggle">ライトモード</button>
   </header>
   <main>
     <!-- アカウント管理 -->
@@ -379,7 +367,7 @@ const htmlContent = `<!DOCTYPE html>
     let currentPage = 0;
     const limit = 10;
     
-    // ダークモード切替
+    // ダークモード切替（初期はダークモード）
     const themeToggle = document.getElementById("themeToggle");
     themeToggle.addEventListener("click", () => {
       document.body.classList.toggle("dark-mode");
@@ -391,15 +379,23 @@ const htmlContent = `<!DOCTYPE html>
       e.preventDefault();
       const username = document.getElementById("regUsername").value;
       const password = document.getElementById("regPassword").value;
-      const res = await fetch("/api/register", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username, password}) });
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
       alert(res.ok ? "登録に成功しました！" : "登録に失敗しました。");
     });
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = document.getElementById("loginUsername").value;
       const password = document.getElementById("loginPassword").value;
-      const res = await fetch("/api/login", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username, password}) });
-      if(res.ok) {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      if (res.ok) {
         const data = await res.json();
         jwtToken = data.token;
         document.getElementById("currentUser").innerText = username;
@@ -427,26 +423,32 @@ const htmlContent = `<!DOCTYPE html>
       e.preventDefault();
       const content = document.getElementById("postContent").value;
       const visibility = document.getElementById("postVisibility").value;
-      const res = await fetch("/api/post", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({content, visibility}) });
-      if(res.ok) {
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+        body: JSON.stringify({ content, visibility })
+      });
+      if (res.ok) {
         document.getElementById("postContent").value = "";
         loadPosts(true);
       } else {
         alert("投稿に失敗しました。");
       }
     });
-    
-    async function loadPosts(reset=false) {
-      if(reset) { currentPage = 0; document.getElementById("posts").innerHTML = ""; }
+    async function loadPosts(reset = false) {
+      if (reset) {
+        currentPage = 0;
+        document.getElementById("posts").innerHTML = "";
+      }
       document.getElementById("spinner").style.display = "block";
       const res = await fetch(\`/api/outbox?page=\${currentPage}&limit=\${limit}\`);
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json();
         data.orderedItems.forEach(post => {
           const div = document.createElement("div");
           div.className = "post";
           div.innerHTML = "<p>" + post.content + "</p><small>" + post.published + "</small>";
-          if(post.canEdit) {
+          if (post.canEdit) {
             div.innerHTML += "<br><button class='editBtn' data-id='" + post.id + "'>編集</button>";
             div.innerHTML += "<button class='deleteBtn' data-id='" + post.id + "'>削除</button>";
           }
@@ -458,25 +460,33 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById("spinner").style.display = "none";
     }
     document.getElementById("loadMore").addEventListener("click", () => loadPosts());
-    
-    // 編集・削除
     document.getElementById("posts").addEventListener("click", async (e) => {
       const target = e.target;
-      if(target.classList.contains("editBtn")){
+      if (target.classList.contains("editBtn")) {
         const postId = target.getAttribute("data-id");
         const newContent = prompt("新しい内容を入力してください:");
-        if(newContent !== null) {
+        if (newContent !== null) {
           const newVisibility = prompt("新しい公開設定を入力してください (public/private):", "public");
-          if(newVisibility === "public" || newVisibility === "private"){
-            const res = await fetch("/api/edit-post", { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ id: postId, content: newContent, visibility: newVisibility }) });
+          if (newVisibility === "public" || newVisibility === "private") {
+            const res = await fetch("/api/edit-post", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+              body: JSON.stringify({ id: postId, content: newContent, visibility: newVisibility })
+            });
             alert(res.ok ? "編集成功" : "編集失敗");
             loadPosts(true);
-          } else { alert("無効な公開設定です。"); }
+          } else {
+            alert("無効な公開設定です。");
+          }
         }
-      } else if(target.classList.contains("deleteBtn")){
+      } else if (target.classList.contains("deleteBtn")) {
         const postId = target.getAttribute("data-id");
-        if(confirm("本当に削除しますか？")){
-          const res = await fetch("/api/delete-post", { method: "DELETE", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ id: postId }) });
+        if (confirm("本当に削除しますか？")) {
+          const res = await fetch("/api/delete-post", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+            body: JSON.stringify({ id: postId })
+          });
           alert(res.ok ? "削除成功" : "削除失敗");
           loadPosts(true);
         }
@@ -487,12 +497,16 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById("friendRequestForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const to = document.getElementById("friendTo").value;
-      const res = await fetch("/api/send-friend-request", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ to }) });
+      const res = await fetch("/api/send-friend-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+        body: JSON.stringify({ to })
+      });
       alert(res.ok ? "フレンドリクエスト送信成功" : "フレンドリクエスト送信失敗");
     });
     document.getElementById("loadFriends").addEventListener("click", async () => {
       const res = await fetch("/api/friends", { headers: { "Authorization": "Bearer " + jwtToken } });
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json();
         const list = data.friends.map(f => "<li>" + f + "</li>").join("");
         document.getElementById("friendList").innerHTML = "<ul>" + list + "</ul>";
@@ -504,18 +518,26 @@ const htmlContent = `<!DOCTYPE html>
       e.preventDefault();
       const name = document.getElementById("groupName").value;
       const description = document.getElementById("groupDescription").value;
-      const res = await fetch("/api/create-group", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ name, description }) });
+      const res = await fetch("/api/create-group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+        body: JSON.stringify({ name, description })
+      });
       alert(res.ok ? "グループ作成成功" : "グループ作成失敗");
     });
     document.getElementById("joinGroupForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const groupId = document.getElementById("joinGroupId").value;
-      const res = await fetch("/api/join-group", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ groupId }) });
+      const res = await fetch("/api/join-group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+        body: JSON.stringify({ groupId })
+      });
       alert(res.ok ? "グループ参加成功" : "グループ参加失敗");
     });
     document.getElementById("loadGroups").addEventListener("click", async () => {
       const res = await fetch("/api/groups", { headers: { "Authorization": "Bearer " + jwtToken } });
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json();
         const list = data.groups.map(g => "<li>" + g.name + " (ID:" + g.id + ")</li>").join("");
         document.getElementById("groupList").innerHTML = "<ul>" + list + "</ul>";
@@ -528,13 +550,17 @@ const htmlContent = `<!DOCTYPE html>
       const groupId = document.getElementById("groupPostGroupId").value;
       const content = document.getElementById("groupPostContent").value;
       const imageURL = document.getElementById("groupPostImageURL").value;
-      const res = await fetch("/api/group-post", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken }, body: JSON.stringify({ groupId, content, imageURL }) });
+      const res = await fetch("/api/group-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + jwtToken },
+        body: JSON.stringify({ groupId, content, imageURL })
+      });
       alert(res.ok ? "グループ投稿成功" : "グループ投稿失敗");
     });
     document.getElementById("loadGroupPosts").addEventListener("click", async () => {
       const groupId = document.getElementById("groupPostGroupId").value;
       const res = await fetch(\`/api/group-outbox?groupId=\${groupId}&page=0&limit=10\`, { headers: { "Authorization": "Bearer " + jwtToken } });
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json();
         const list = data.orderedItems.map(p => "<div class='post'><p>" + p.content + "</p><small>" + p.published + "</small></div>").join("");
         document.getElementById("groupPostList").innerHTML = list;
@@ -545,8 +571,12 @@ const htmlContent = `<!DOCTYPE html>
     document.getElementById("uploadImageForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
-      const res = await fetch("/api/upload-image", { method: "POST", headers: { "Authorization": "Bearer " + jwtToken }, body: formData });
-      if(res.ok) {
+      const res = await fetch("/api/upload-image", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + jwtToken },
+        body: formData
+      });
+      if (res.ok) {
         const data = await res.json();
         document.getElementById("uploadedImageInfo").innerText = "画像アップロード成功。画像ID: " + data.id;
       } else {
@@ -564,13 +594,13 @@ const htmlContent = `<!DOCTYPE html>
 // API エンドポイント
 // ------------------------------
 async function handler(req: Request): Promise<Response> {
-  // レートリミットチェック
-  const rateRes = checkRateLimit(req);
-  if(rateRes) return rateRes;
-  
   const url = new URL(req.url);
   const pathname = url.pathname;
   const accept = req.headers.get("Accept") || "";
+  
+  // レートリミットチェック
+  const rateRes = checkRateLimit(req);
+  if (rateRes) return rateRes;
   
   // UI 提供
   if ((pathname === "/" || pathname === "/index.html") && accept.includes("text/html")) {
@@ -949,3 +979,4 @@ async function handler(req: Request): Promise<Response> {
 }
 
 export default { fetch: handler };
+
