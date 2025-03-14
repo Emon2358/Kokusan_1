@@ -5,110 +5,65 @@
   <title>国産第1号</title>
   <style>
     /* リセット・ベース設定 */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      height: 100%;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: url('https://i.pinimg.com/736x/4b/22/4e/4b224ee747fc0e410c0887d758998124.jpg') no-repeat center center fixed;
-      background-size: cover;
-      color: #0f0; /* ネオン緑 */
-      overflow: hidden;
-    }
-    /* ネオンテキスト効果 */
-    .neon {
-      color: #0f0;
-      text-shadow:
-        0 0 5px #0f0,
-        0 0 10px #0f0,
-        0 0 20px #0f0,
-        0 0 40px #0f0;
-    }
-    /* コンテナ設定 */
-    .container {
-      position: relative;
-      z-index: 2;
-      padding: 20px;
-      overflow-y: auto;
-      height: 100%;
-    }
-    /* フォーム・投稿一覧のスタイル */
-    .post-form, .posts {
-      max-width: 600px;
-      margin: 20px auto;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 20px;
-      border-radius: 10px;
-      transition: background 0.3s ease;
-    }
-    .post-form:hover, .posts:hover {
-      background: rgba(0, 0, 0, 0.9);
-    }
-    /* 投稿表示 */
-    .post {
-      border-bottom: 1px solid rgba(0,255,170,0.5);
-      padding: 10px 0;
-      transition: transform 0.3s ease, text-shadow 0.3s ease;
-    }
-    .post:hover {
-      transform: scale(1.02);
-      text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
-    }
-    /* 入力フォーム */
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 5px;
-      background: rgba(255,255,255,0.1);
-      color: #0f0;
-      outline: none;
-    }
-    /* ボタン */
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      background: rgba(0,255,170,0.2);
-      color: #0f0;
-      cursor: pointer;
-      transition: background 0.3s ease, transform 0.3s ease;
-    }
-    button:hover {
-      background: rgba(0,255,170,0.4);
-      transform: scale(1.05);
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Segoe UI', sans-serif; background: #36393f; color: #fff; }
+    .neon { color: #00ff7f; text-shadow: 0 0 5px #00ff7f, 0 0 10px #00ff7f, 0 0 20px #00ff7f; }
     /* ロード画面 */
     #loading {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      flex-direction: column;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #23272a; display: flex; align-items: center; justify-content: center;
+      z-index: 1000; flex-direction: column;
     }
     #loading .loader {
       border: 8px solid rgba(255,255,255,0.1);
-      border-top: 8px solid #0f0;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+      border-top: 8px solid #00ff7f;
+      border-radius: 50%; width: 60px; height: 60px;
+      animation: spin 1s linear infinite; margin-bottom: 20px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Discord風のレイアウト */
+    .app-container { display: flex; height: 100%; }
+    .sidebar {
+      width: 250px; background: #2f3136; padding: 10px; display: flex;
+      flex-direction: column;
     }
+    .chat-container {
+      flex: 1; display: flex; flex-direction: column; background: #36393f;
+    }
+    .sidebar h2, .chat-container h2 { margin-bottom: 10px; font-size: 18px; }
+    .sidebar section { margin-bottom: 20px; }
+    .sidebar input, .chat-container input {
+      width: 100%; padding: 8px; margin-bottom: 8px; border: none;
+      border-radius: 4px; background: #40444b; color: #fff;
+    }
+    .sidebar button, .chat-container button {
+      width: 100%; padding: 8px; border: none; border-radius: 4px;
+      background: #7289da; color: #fff; cursor: pointer; transition: background 0.2s;
+    }
+    .sidebar button:hover, .chat-container button:hover {
+      background: #677bc4;
+    }
+    .friend-list { list-style: none; }
+    .friend-item {
+      padding: 8px; margin-bottom: 4px; background: #40444b;
+      border-radius: 4px; cursor: pointer; transition: background 0.2s;
+    }
+    .friend-item:hover { background: #4f545c; }
+    .messages { flex: 1; overflow-y: auto; padding: 10px; }
+    .message { margin-bottom: 10px; }
+    .message strong { margin-right: 5px; }
+    .chat-input {
+      display: flex; padding: 10px; border-top: 1px solid #40444b;
+    }
+    .chat-input input {
+      flex: 1; padding: 8px; border: none; border-radius: 4px;
+      background: #40444b; color: #fff;
+    }
+    .chat-input button {
+      margin-left: 10px; padding: 8px 16px; border: none; border-radius: 4px;
+      background: #7289da; color: #fff; cursor: pointer; transition: background 0.2s;
+    }
+    .chat-input button:hover { background: #677bc4; }
   </style>
 </head>
 <body>
@@ -117,70 +72,202 @@
     <div class="loader"></div>
     <div class="neon">Loading...</div>
   </div>
-  <div class="container">
-    <h1 class="neon">国産第1号</h1>
-    <div class="post-form">
-      <h2 class="neon">新規投稿</h2>
-      <form id="postForm">
-        <input type="text" id="user" placeholder="ユーザー名" required>
-        <textarea id="content" placeholder="内容" required></textarea>
-        <button type="submit">投稿する</button>
-      </form>
+  <!-- メインアプリ（初回は非表示、ロード完了後に表示） -->
+  <div class="app-container" id="app" style="display: none;">
+    <!-- サイドバー -->
+    <div class="sidebar">
+      <h2 class="neon">国産第1号</h2>
+      <!-- ユーザー登録エリア -->
+      <section id="register-section">
+        <h3>登録</h3>
+        <input type="text" id="reg-username" placeholder="ユーザー名">
+        <button id="register-btn">登録する</button>
+      </section>
+      <!-- 登録済みの場合のユーザーエリア -->
+      <section id="user-section" style="display:none;">
+        <h3>ようこそ, <span id="current-user"></span></h3>
+        <!-- ユーザー検索 -->
+        <section>
+          <h4>ユーザー検索</h4>
+          <input type="text" id="search-query" placeholder="検索...">
+          <button id="search-btn">検索</button>
+          <ul id="search-results"></ul>
+        </section>
+        <!-- フレンドリスト -->
+        <section>
+          <h4>フレンドリスト</h4>
+          <ul id="friend-list" class="friend-list"></ul>
+        </section>
+      </section>
     </div>
-    <div class="posts" id="posts">
-      <h2 class="neon">投稿一覧</h2>
-      <!-- 投稿はここに動的に挿入 -->
+    <!-- チャットコンテナ -->
+    <div class="chat-container">
+      <div class="messages" id="messages">
+        <h2 class="neon">チャットを選択してください</h2>
+      </div>
+      <div class="chat-input" id="chat-input" style="display: none;">
+        <input type="text" id="chat-message" placeholder="メッセージを入力...">
+        <button id="send-btn">送信</button>
+      </div>
     </div>
   </div>
   <script>
-    // ページ読み込み完了後にロード画面を非表示にする
+    let currentUser = null;
+    let currentFriend = null;
+    
     window.addEventListener('load', () => {
-      const loadingScreen = document.getElementById('loading');
-      loadingScreen.style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      // 既に登録済みならlocalStorageから取得
+      const storedUser = localStorage.getItem('username');
+      if (storedUser) {
+        currentUser = storedUser;
+        showUserSection();
+        loadFriends();
+      }
     });
     
-    // 投稿一覧を取得して表示する関数
-    async function fetchPosts() {
-      try {
-        const res = await fetch('/api/posts');
-        const posts = await res.json();
-        const postsContainer = document.getElementById('posts');
-        postsContainer.innerHTML = '<h2 class="neon">投稿一覧</h2>';
-        posts.forEach(post => {
-          const postEl = document.createElement('div');
-          postEl.className = 'post neon';
-          postEl.innerHTML = '<strong>' + post.user + '</strong>: ' + post.content;
-          postsContainer.appendChild(postEl);
-        });
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      }
+    function showUserSection() {
+      document.getElementById('register-section').style.display = 'none';
+      document.getElementById('user-section').style.display = 'block';
+      document.getElementById('current-user').innerText = currentUser;
     }
-
-    // 投稿フォームの送信処理
-    document.getElementById('postForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const user = document.getElementById('user').value;
-      const content = document.getElementById('content').value;
+    
+    document.getElementById('register-btn').addEventListener('click', async () => {
+      const username = document.getElementById('reg-username').value.trim();
+      if (!username) return;
       try {
-        const res = await fetch('/api/posts', {
+        const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user, content })
+          body: JSON.stringify({ username })
         });
+        const data = await res.json();
         if (res.ok) {
-          document.getElementById('postForm').reset();
-          fetchPosts();
+          currentUser = data.username;
+          localStorage.setItem('username', currentUser);
+          showUserSection();
+          loadFriends();
         } else {
-          console.error('投稿に失敗しました');
+          alert(data.error || '登録失敗');
         }
-      } catch (error) {
-        console.error('投稿エラー:', error);
+      } catch (e) {
+        console.error(e);
       }
     });
-
-    // 初回ロード時に投稿一覧を取得
-    fetchPosts();
+    
+    document.getElementById('search-btn').addEventListener('click', async () => {
+      const query = document.getElementById('search-query').value.trim();
+      if (!query) return;
+      try {
+        const res = await fetch('/api/users/search?query=' + encodeURIComponent(query));
+        const users = await res.json();
+        const resultsEl = document.getElementById('search-results');
+        resultsEl.innerHTML = '';
+        users.forEach(user => {
+          // 自分自身や既にフレンドなら表示しない
+          if (user.username === currentUser) return;
+          const li = document.createElement('li');
+          li.className = 'friend-item';
+          li.innerText = user.username;
+          li.addEventListener('click', () => {
+            addFriend(user.username);
+          });
+          resultsEl.appendChild(li);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    
+    async function addFriend(friendUsername) {
+      try {
+        const res = await fetch('/api/friends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: currentUser, to: friendUsername })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('フレンド追加成功: ' + friendUsername);
+          loadFriends();
+        } else {
+          alert(data.error || 'フレンド追加失敗');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    async function loadFriends() {
+      try {
+        const res = await fetch('/api/friends?username=' + encodeURIComponent(currentUser));
+        const data = await res.json();
+        const friendListEl = document.getElementById('friend-list');
+        friendListEl.innerHTML = '';
+        data.friends.forEach(friend => {
+          const li = document.createElement('li');
+          li.className = 'friend-item';
+          li.innerText = friend;
+          li.addEventListener('click', () => {
+            selectFriend(friend);
+          });
+          friendListEl.appendChild(li);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    function selectFriend(friend) {
+      currentFriend = friend;
+      document.getElementById('messages').innerHTML = '';
+      document.getElementById('chat-input').style.display = 'flex';
+      loadMessages();
+    }
+    
+    async function loadMessages() {
+      if (!currentFriend) return;
+      try {
+        const res = await fetch(`/api/messages?from=${encodeURIComponent(currentUser)}&to=${encodeURIComponent(currentFriend)}`);
+        const messages = await res.json();
+        const messagesEl = document.getElementById('messages');
+        messagesEl.innerHTML = '';
+        messages.forEach(msg => {
+          const div = document.createElement('div');
+          div.className = 'message';
+          div.innerHTML = `<strong>${msg.from}:</strong> ${msg.message}`;
+          messagesEl.appendChild(div);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    document.getElementById('send-btn').addEventListener('click', async () => {
+      const messageInput = document.getElementById('chat-message');
+      const text = messageInput.value.trim();
+      if (!text || !currentFriend) return;
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: currentUser, to: currentFriend, message: text })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          messageInput.value = '';
+          loadMessages();
+        } else {
+          alert(data.error || '送信失敗');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    
+    // 定期的にメッセージをポーリング（3秒ごと）
+    setInterval(loadMessages, 3000);
   </script>
 </body>
 </html>
