@@ -17,14 +17,15 @@ function getCentral(): WebSocket | null {
 }
 
 // HTML（Discord にインスパイアされた UI、背景・ロード画面・画像アップロードボタン付き）
+// CSP の設定を更新：Unsplash の画像と inline script を許可
 const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>国産第1号</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://source.unsplash.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://source.unsplash.com data:;">
   <style>
-    /* 背景は Unsplash のランダム画像（またはお好みのものに変更可能） */
+    /* 背景は Unsplash のランダム画像 */
     body { margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: url('https://source.unsplash.com/random/1920x1080') no-repeat center center fixed; background-size: cover; color: white; }
     /* ロード画面 */
     #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; font-size: 2rem; z-index: 1000; }
@@ -262,7 +263,7 @@ async function handleWebSocket(socket: WebSocket, req: Request) {
               }
             }
           } else {
-            // 友達からは中央へ送信し、送信者にもエコー
+            // 友達からは中央へ送信し、送信者にエコー
             const central = getCentral();
             if (central && central.readyState === WebSocket.OPEN) {
               central.send(JSON.stringify(sysMsg));
@@ -349,7 +350,6 @@ async function handleUpload(req: Request): Promise<Response> {
   // ファイル内容を ArrayBuffer として取得し、base64 化
   const buf = await file.arrayBuffer();
   const uint8Array = new Uint8Array(buf);
-  // base64 エンコード
   let binary = "";
   for (const byte of uint8Array) {
     binary += String.fromCharCode(byte);
@@ -358,7 +358,6 @@ async function handleUpload(req: Request): Promise<Response> {
   // 一意な ID を生成して KV に保存
   const imageId = crypto.randomUUID();
   await kv.set(["image", imageId], { content: base64, contentType: file.type, timestamp: Date.now() });
-  // アップロード完了時は画像取得用の URL を返す
   return new Response(JSON.stringify({ id: imageId, url: "/image?id=" + imageId }), {
     headers: { "Content-Type": "application/json" },
   });
@@ -372,7 +371,6 @@ async function handleGetImage(req: Request): Promise<Response> {
   const res = await kv.get(["image", id]);
   if (!res.value) return new Response("Not Found", { status: 404 });
   const { content, contentType } = res.value as { content: string; contentType: string };
-  // base64 から Uint8Array へ変換
   const binaryStr = atob(content);
   const len = binaryStr.length;
   const bytes = new Uint8Array(len);
