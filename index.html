@@ -4,89 +4,157 @@
   <meta charset="UTF-8">
   <title>国産第1号</title>
   <style>
-    /* ページ全体の初期設定 */
-    body, html {
+    /* リセット・ベース設定 */
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
       height: 100%;
-      font-family: sans-serif;
-      background: #2e2e2e; /* 鋼黒を基調としたベースカラー */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('https://i.pinimg.com/736x/4b/22/4e/4b224ee747fc0e410c0887d758998124.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #0f0; /* ネオン緑 */
       overflow: hidden;
     }
-    /* グラデーションアニメーションの背景 */
-    .gradient-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(45deg, rgba(70,70,70,0.5), rgba(0,0,0,0.5));
-      background-size: 400% 400%;
-      animation: gradientAnimation 15s ease infinite;
-      z-index: -1;
-    }
-    @keyframes gradientAnimation {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
+    /* ネオンテキスト効果 */
+    .neon {
+      color: #0f0;
+      text-shadow:
+        0 0 5px #0f0,
+        0 0 10px #0f0,
+        0 0 20px #0f0,
+        0 0 40px #0f0;
     }
     /* コンテナ設定 */
     .container {
       position: relative;
-      z-index: 1;
-      color: white;
+      z-index: 2;
       padding: 20px;
+      overflow-y: auto;
+      height: 100%;
     }
-    /* 投稿フォームと投稿一覧のレイアウト（Twitter に似たシンプルなスタイル） */
+    /* フォーム・投稿一覧のスタイル */
     .post-form, .posts {
       max-width: 600px;
       margin: 20px auto;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.7);
       padding: 20px;
       border-radius: 10px;
+      transition: background 0.3s ease;
     }
+    .post-form:hover, .posts:hover {
+      background: rgba(0, 0, 0, 0.9);
+    }
+    /* 投稿表示 */
     .post {
-      border-bottom: 1px solid #555;
+      border-bottom: 1px solid rgba(0,255,170,0.5);
       padding: 10px 0;
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
+    }
+    .post:hover {
+      transform: scale(1.02);
+      text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+    }
+    /* 入力フォーム */
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.1);
+      color: #0f0;
+      outline: none;
+    }
+    /* ボタン */
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: rgba(0,255,170,0.2);
+      color: #0f0;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+    button:hover {
+      background: rgba(0,255,170,0.4);
+      transform: scale(1.05);
+    }
+    /* ロード画面 */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+    #loading .loader {
+      border: 8px solid rgba(255,255,255,0.1);
+      border-top: 8px solid #0f0;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div class="gradient-bg"></div>
+  <!-- ロード画面 -->
+  <div id="loading">
+    <div class="loader"></div>
+    <div class="neon">Loading...</div>
+  </div>
   <div class="container">
-    <h1>国産第1号</h1>
+    <h1 class="neon">国産第1号</h1>
     <div class="post-form">
-      <h2>新規投稿</h2>
+      <h2 class="neon">新規投稿</h2>
       <form id="postForm">
-        <input type="text" id="user" placeholder="ユーザー名" required style="width:100%; padding:10px; margin-bottom:10px;">
-        <textarea id="content" placeholder="内容" required style="width:100%; padding:10px; margin-bottom:10px;"></textarea>
-        <button type="submit" style="padding:10px 20px;">投稿する</button>
+        <input type="text" id="user" placeholder="ユーザー名" required>
+        <textarea id="content" placeholder="内容" required></textarea>
+        <button type="submit">投稿する</button>
       </form>
     </div>
     <div class="posts" id="posts">
-      <h2>投稿一覧</h2>
-      <!-- 投稿一覧はここに動的に挿入 -->
+      <h2 class="neon">投稿一覧</h2>
+      <!-- 投稿はここに動的に挿入 -->
     </div>
   </div>
   <script>
-    // 投稿一覧を取得して表示
+    // ページ読み込み完了後にロード画面を非表示にする
+    window.addEventListener('load', () => {
+      const loadingScreen = document.getElementById('loading');
+      loadingScreen.style.display = 'none';
+    });
+    
+    // 投稿一覧を取得して表示する関数
     async function fetchPosts() {
-      const res = await fetch('/api/posts');
-      const posts = await res.json();
-      const postsContainer = document.getElementById('posts');
-      postsContainer.innerHTML = '<h2>投稿一覧</h2>';
-      posts.forEach(post => {
-        const postEl = document.createElement('div');
-        postEl.className = 'post';
-        postEl.innerHTML = '<strong>' + post.user + '</strong>: ' + post.content;
-        postsContainer.appendChild(postEl);
-      });
+      try {
+        const res = await fetch('/api/posts');
+        const posts = await res.json();
+        const postsContainer = document.getElementById('posts');
+        postsContainer.innerHTML = '<h2 class="neon">投稿一覧</h2>';
+        posts.forEach(post => {
+          const postEl = document.createElement('div');
+          postEl.className = 'post neon';
+          postEl.innerHTML = '<strong>' + post.user + '</strong>: ' + post.content;
+          postsContainer.appendChild(postEl);
+        });
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
     }
 
     // 投稿フォームの送信処理
@@ -94,14 +162,20 @@
       e.preventDefault();
       const user = document.getElementById('user').value;
       const content = document.getElementById('content').value;
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, content })
-      });
-      if (res.ok) {
-        document.getElementById('postForm').reset();
-        fetchPosts();
+      try {
+        const res = await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, content })
+        });
+        if (res.ok) {
+          document.getElementById('postForm').reset();
+          fetchPosts();
+        } else {
+          console.error('投稿に失敗しました');
+        }
+      } catch (error) {
+        console.error('投稿エラー:', error);
       }
     });
 
