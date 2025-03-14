@@ -10,13 +10,16 @@ import { create, verify, getNumericDate, Payload } from "https://deno.land/x/djw
 import { hash, compare } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 // 環境変数の取得
+// 環境変数から値を取得
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "";
 const FEDERATION_SECRET = Deno.env.get("FEDERATION_SECRET") || "";
 const DOMAIN = Deno.env.get("DOMAIN") || "";
+
+// 環境変数が設定されていない場合、エラーを投げる（Deno.exit は使用しない）
 if (!JWT_SECRET || !FEDERATION_SECRET || !DOMAIN) {
-  console.error("Error: JWT_SECRET, FEDERATION_SECRET, and DOMAIN must be set.");
-  Deno.exit(1);
+  throw new Error("JWT_SECRET, FEDERATION_SECRET, and DOMAIN must be set in environment variables.");
 }
+
 
 // Deno KV を利用したデータ永続化
 const kv = await Deno.openKv();
