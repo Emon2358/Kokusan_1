@@ -1,4 +1,4 @@
-// server.ts
+// mod.ts
 // 国産第1号 - 分散型ソーシャルネットワーク（超高度版・公開性制御・埋め込みプレビュー・フレンド／グループ／画像投稿機能付き）
 //
 // 環境変数（Deno Deploy または .env）:
@@ -9,17 +9,15 @@
 import { create, verify, getNumericDate, Payload } from "https://deno.land/x/djwt@v2.7/mod.ts";
 import { hash, compare } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
-// 環境変数の取得
 // 環境変数から値を取得
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "";
 const FEDERATION_SECRET = Deno.env.get("FEDERATION_SECRET") || "";
 const DOMAIN = Deno.env.get("DOMAIN") || "";
 
-// 環境変数が設定されていない場合、エラーを投げる（Deno.exit は使用しない）
+// 環境変数が設定されていない場合はエラーを throw する
 if (!JWT_SECRET || !FEDERATION_SECRET || !DOMAIN) {
   throw new Error("JWT_SECRET, FEDERATION_SECRET, and DOMAIN must be set in environment variables.");
 }
-
 
 // Deno KV を利用したデータ永続化
 const kv = await Deno.openKv();
@@ -87,16 +85,25 @@ const SECURITY_HEADERS: HeadersInit = {
 
 // 共通レスポンス関数
 function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
+  });
 }
 function textResponse(text: string, status = 200): Response {
-  return new Response(text, { status, headers: { "Content-Type": "text/plain", ...SECURITY_HEADERS } });
+  return new Response(text, {
+    status,
+    headers: { "Content-Type": "text/plain", ...SECURITY_HEADERS },
+  });
 }
 function htmlResponse(html: string, status = 200): Response {
-  return new Response(html, { status, headers: { "Content-Type": "text/html", ...SECURITY_HEADERS } });
+  return new Response(html, {
+    status,
+    headers: { "Content-Type": "text/html", ...SECURITY_HEADERS },
+  });
 }
 
-// 簡易レートリミット（IP毎）
+// 簡易レートリミット（IP毎チェック）
 function checkRateLimit(req: Request): Response | null {
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
   const now = Date.now();
@@ -512,7 +519,6 @@ const htmlContent = `<!DOCTYPE html>
         const data = await res.json();
         const list = data.groups.map(g => "<li>" + g.name + " (ID:" + g.id + ")</li>").join("");
         document.getElementById("groupList").innerHTML = "<ul>" + list + "</ul>";
-        // グループ投稿用フォーム表示
         document.getElementById("groupPostForm").style.display = "block";
         document.getElementById("loadGroupPosts").style.display = "block";
       }
@@ -571,7 +577,7 @@ async function handler(req: Request): Promise<Response> {
     return htmlResponse(htmlContent);
   }
   
-  // ActivityPub 関連（WebFinger, Actor）
+  // ActivityPub 関連
   if (req.method === "GET" && pathname === "/.well-known/webfinger") {
     const resource = url.searchParams.get("resource") || "";
     return jsonResponse({
@@ -601,7 +607,10 @@ async function handler(req: Request): Promise<Response> {
       const passwordHash = await hash(password);
       await kv.set(userKey, { username, passwordHash });
       return jsonResponse({ message: "User registered" }, 201);
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // ログイン（JWT 発行）
@@ -615,7 +624,10 @@ async function handler(req: Request): Promise<Response> {
       const payload: Payload = { username, exp: getNumericDate(60 * 60) };
       const token = await create({ alg: "HS256", typ: "JWT" }, payload, JWT_SECRET);
       return jsonResponse({ token });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // 投稿作成（認証必須、visibility と任意の imageURL を含む）
@@ -640,7 +652,10 @@ async function handler(req: Request): Promise<Response> {
         published: post.createdAt,
         attributedTo: `https://${DOMAIN}/actor`
       }, 201);
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // 投稿編集（認証必須、投稿者のみ）
@@ -660,7 +675,10 @@ async function handler(req: Request): Promise<Response> {
       if (visibility === "public" || visibility === "private") post.visibility = visibility;
       await kv.set(compositeKey, post);
       return jsonResponse({ message: "Post updated" });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // 投稿削除（認証必須、投稿者のみ）
@@ -679,7 +697,10 @@ async function handler(req: Request): Promise<Response> {
       await kv.delete(compositeKey);
       await kv.delete(["post_by_id", id]);
       return jsonResponse({ message: "Post deleted" });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // Outbox：投稿一覧（ページネーション・公開性制御付き）
@@ -704,7 +725,13 @@ async function handler(req: Request): Promise<Response> {
       attributedTo: `https://${DOMAIN}/actor`,
       canEdit: currentUser === post.author
     }));
-    return jsonResponse({ "@context": "https://www.w3.org/ns/activitystreams", id: `https://${DOMAIN}/api/outbox`, type: "OrderedCollection", totalItems, orderedItems });
+    return jsonResponse({
+      "@context": "https://www.w3.org/ns/activitystreams",
+      id: `https://${DOMAIN}/api/outbox`,
+      type: "OrderedCollection",
+      totalItems,
+      orderedItems
+    });
   }
   
   // Inbox：フェデレーション受信（専用ヘッダー認証）
@@ -715,7 +742,10 @@ async function handler(req: Request): Promise<Response> {
       const data = await req.json();
       console.log("Received federated activity:", data);
       return new Response(null, { status: 202, headers: SECURITY_HEADERS });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // ========================
@@ -732,7 +762,10 @@ async function handler(req: Request): Promise<Response> {
       const request: FriendRequest = { from: currentUser, to, createdAt: new Date().toISOString() };
       await kv.set(["friend_request", currentUser, to], request);
       return jsonResponse({ message: "Friend request sent" }, 201);
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // フレンドリクエスト承認
@@ -745,12 +778,14 @@ async function handler(req: Request): Promise<Response> {
       const reqKey = ["friend_request", from, currentUser];
       const request = (await kv.get<FriendRequest>(reqKey)).value;
       if (!request) return jsonResponse({ error: "Friend request not found" }, 404);
-      // 保存：フレンドはユーザー名順で保存
       const friendKey = (from < currentUser) ? ["friend", from, currentUser] : ["friend", currentUser, from];
       await kv.set(friendKey, { user1: friendKey[1], user2: friendKey[2] });
       await kv.delete(reqKey);
       return jsonResponse({ message: "Friend request accepted" });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // フレンド一覧取得
@@ -758,7 +793,7 @@ async function handler(req: Request): Promise<Response> {
     const currentUser = await getUserFromAuth(req);
     if (!currentUser) return jsonResponse({ error: "Unauthorized" }, 401);
     const friends: string[] = [];
-    for await (const { key, value } of kv.list({ prefix: ["friend"] })) {
+    for await (const { value } of kv.list({ prefix: ["friend"] })) {
       if (!value) continue;
       if (value.user1 === currentUser) friends.push(value.user2);
       else if (value.user2 === currentUser) friends.push(value.user1);
@@ -781,7 +816,10 @@ async function handler(req: Request): Promise<Response> {
       const group: Group = { id, name, description: description || "", owner: currentUser, members: [currentUser], createdAt: new Date().toISOString() };
       await kv.set(["group", id], group);
       return jsonResponse({ message: "Group created", groupId: id }, 201);
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // グループ参加
@@ -799,7 +837,10 @@ async function handler(req: Request): Promise<Response> {
         await kv.set(groupKey, group);
       }
       return jsonResponse({ message: "Joined group" });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // グループ退出
@@ -815,7 +856,10 @@ async function handler(req: Request): Promise<Response> {
       group.members = group.members.filter(m => m !== currentUser);
       await kv.set(groupKey, group);
       return jsonResponse({ message: "Left group" });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // 所属グループ一覧取得
@@ -837,7 +881,6 @@ async function handler(req: Request): Promise<Response> {
     try {
       const { groupId, content, imageURL } = await req.json();
       if (!groupId || !content) return jsonResponse({ error: "Group ID and content required" }, 400);
-      // 所属確認
       const group = (await kv.get<Group>(["group", groupId])).value;
       if (!group || !group.members.includes(currentUser)) return jsonResponse({ error: "Not a member of the group" }, 403);
       const id = crypto.randomUUID();
@@ -846,7 +889,10 @@ async function handler(req: Request): Promise<Response> {
       const compositeKey = ["group_post", createdAt, id];
       await kv.set(compositeKey, groupPost);
       return jsonResponse({ message: "Group post created", id });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Invalid request" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Invalid request" }, 400);
+    }
   }
   
   // グループ投稿一覧（ページネーション）
@@ -883,7 +929,10 @@ async function handler(req: Request): Promise<Response> {
       const image: Image = { id, data: base64Data, contentType: file.type, uploadedAt: new Date().toISOString(), uploader: currentUser };
       await kv.set(["image", id], image);
       return jsonResponse({ message: "Image uploaded", id });
-    } catch (e) { console.error(e); return jsonResponse({ error: "Image upload failed" }, 400); }
+    } catch (e) {
+      console.error(e);
+      return jsonResponse({ error: "Image upload failed" }, 400);
+    }
   }
   
   // 画像取得
