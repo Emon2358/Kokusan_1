@@ -4,7 +4,7 @@ import { Application, Router, send } from "https://deno.land/x/oak/mod.ts";
 const app = new Application();
 const router = new Router();
 
-// 簡易的な投稿データ（実運用では DB 等に変更）
+// 簡易的な投稿データ（実運用ではDB等に変更）
 let posts: { id: number; user: string; content: string; timestamp: number }[] = [];
 
 // 投稿一覧を取得するエンドポイント
@@ -21,13 +21,12 @@ router.post("/api/posts", async (context) => {
     content: body.content,
     timestamp: Date.now(),
   };
-  // 最新投稿を先頭に追加
   posts.unshift(newPost);
   context.response.body = newPost;
   context.response.status = 201;
 });
 
-// 静的ファイルを /static 以下に配置する設定
+// 静的ファイル（例: index.html）を配信する設定
 app.use(async (context, next) => {
   if (context.request.url.pathname.startsWith("/static")) {
     await send(context, context.request.url.pathname, {
@@ -50,5 +49,3 @@ app.use(async (context) => {
 
 console.log("Server running on http://localhost:8000");
 await app.listen({ port: 8000 });
-
-
