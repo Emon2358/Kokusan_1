@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Winamp Replica with Nerdcore Tracks</title>
+  <style>
+    /* ページ全体の余白をなくし、背景色を設定 */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <!-- Webampを描画する要素 -->
+  <div id="app"></div>
+
+  <!-- Webampライブラリ本体（CDN） -->
+  <script src="https://unpkg.com/webamp"></script>
+  <script>
+    /*
+      GitHubの「Emon2358/nerdcore-museum」リポジトリから、
+      "downloads" ディレクトリ内のファイル情報を取得し、
+      mp3/m4aファイルを抽出してプレイリストに登録します。
+    */
+    fetch("https://api.github.com/repos/Emon2358/nerdcore-museum/contents/downloads")
+      .then(response => response.json())
+      .then(files => {
+        // mp3またはm4aファイルのみを抽出してトラック情報を作成
+        const tracks = files
+          .filter(file => file.name.endsWith(".mp3") || file.name.endsWith(".m4a"))
+          .map(file => {
+            return {
+              metaData: {
+                // 表示される曲情報。必要に応じてartist/titleを変更可能
+                artist: "Nerdcore Museum",
+                title: file.name
+              },
+              // GitHub上でダウンロード可能なURLをそのまま再生URLに使用
+              url: file.download_url
+            };
+          });
+
+        // Webampを初期化
+        const webamp = new Webamp({
+          // 取得したファイルをプレイリストに設定
+          initialTracks: tracks,
+
+          // クラシックなWinampスキンを適用
+          initialSkin: {
+            url: "https://cdn.webampskins.org/skins/classic/base-2.91.wsz"
+          },
+
+          // ウィンドウ配置：メイン/イコライザ/プレイリストを縦に並べる
+          initialWindowLayout: {
+            main: {
+              position: { x: 0, y: 0 }
+            },
+            equalizer: {
+              position: { x: 0, y: 116 },
+              open: true
+            },
+            playlist: {
+              position: { x: 0, y: 232 },
+              open: true
+            }
+          },
+
+          // イコライザ設定
+          eq: {
+            enable: true,
+            auto: false,
+            bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            preamp: 0
+          },
+
+          // ボリュームを50%に設定
+          initialVolume: 50
+        });
+
+        // #app に描画
+        webamp.renderWhenReady(document.getElementById("app"));
+      })
+      .catch(error => {
+        console.error("Failed to load tracks:", error);
+      });
+  </script>
+</body>
+</html>
